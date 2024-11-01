@@ -1,0 +1,371 @@
+---
+title: "DDS Analytics - Case 1 study"
+author: "Hayoung Cheon"
+date: "2024-10-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 0. Problem to solve
+In this case study we have two goals to solve.
+First, we need to find out three factors that most likely impact Attrition.
+Second, we should build the prediction model out of it which meets 60% of accuracy, sensitivity and specificity.
+
+# Library
+```{r}
+# For tidying the data
+library(tidyverse)
+
+# To visualize data
+library(ggplot2)
+# To label each of y's value
+library(plotly)
+
+# For ggparis
+library(GGally)
+```
+# 1. Explore the data 
+
+## Load data
+```{r}
+emps <- read.csv("/Users/oyunm/Desktop/SMU/DS-6306-Doing-the-Data-Science/project1/week8-case1/CaseStudy1-data.csv")
+head(emps)
+
+summary(emps)
+```
+
+## Contigency Tables
+Firstly, took all the variable to find out the ratio of Attrition for each variable. I found that some of the variabels are showing a distinct difference. It was interesting to see that especially job role is showing significant difference.
+```{r}
+# from 28 to 36 higher attrition num.
+table(emps$Attrition, emps$Age)
+
+# Non-Travel: 11, Travel_frequently: 35, Travel-Rarely:94
+# travel_frequently has 0.2215 prob for yes
+table(emps$Attrition, emps$BusinessTravel)
+prop.table(table(emps$Attrition, emps$BusinessTravel), margin=2)
+
+# sales tend to have higher percentage of attrition 0.21
+table(emps$Attrition, emps$Department)
+prop.table(table(emps$Attrition, emps$Department),margin=2 )
+
+#Not really a big significance. the furthest does have the highest probability though.
+table(emps$Attrition, emps$DistanceFromHome)
+prop.table(table(emps$Attrition, emps$DistanceFromHome), margin=2)
+
+#not much...
+table(emps$Attrition, emps$Education)
+prop.table(table(emps$Attrition, emps$Education), margin=2)
+
+
+#1. Human Resurces(0.267), 2. Technical Degree(0.227) 3. Marketting(0.2)
+table(emps$Attrition, emps$EducationField)
+prop.table(table(emps$Attrition, emps$EducationField), margin=2)
+
+
+table(emps$Attrition, emps$EmployeeCount)
+
+# score 1: 0.244, score 4: 0.149 score 2: 0.135, score3: 0.136
+table(emps$Attrition, emps$EnvironmentSatisfaction)
+prop.table(table(emps$Attrition, emps$EnvironmentSatisfaction), margin=2)
+
+# Male seems to have higher  
+table(emps$Attrition, emps$Gender)
+prop.table(table(emps$Attrition, emps$Gender), margin=2)
+
+
+table(emps$Attrition, emps$HourlyRate)
+
+# less job involvement, the more attrition
+table(emps$Attrition, emps$JobInvolvement)
+prop.table(table(emps$Attrition, emps$JobInvolvement), margin=2)
+
+
+# lower job level, the more attrition
+table(emps$Attrition, emps$JobLevel)
+prop.table(table(emps$Attrition, emps$JobInvolvement), margin=2)
+
+
+#sales representative(0.452830), Human Resources(0.222), Manufacturing Director(0.022 - big satisfactory)
+# might want to check the sales' part job satisfaction
+table(emps$Attrition, emps$JobRole)
+prop.table(table(emps$Attrition, emps$JobRole), margin=2)
+
+# the lower, the more attrition => we can check this by job role or department.. or gender
+table(emps$Attrition, emps$JobSatisfaction)
+prop.table(table(emps$Attrition, emps$JobSatisfaction), margin=2)
+
+# single more attrition => easy to move?
+table(emps$Attrition, emps$MaritalStatus)
+prop.table(table(emps$Attrition, emps$MaritalStatus), margin=2)
+
+
+# 5years and so on has higher attrition, more company more attrition,
+# 5 i
+table(emps$Attrition, emps$NumCompaniesWorked)
+prop.table(table(emps$Attrition, emps$NumCompaniesWorked), margin=2)
+
+# Over time yes => 
+table(emps$Attrition, emps$OverTime)
+prop.table(table(emps$Attrition, emps$OverTime))
+prop.table(table(emps$Attrition, emps$OverTime), margin=2)
+
+# high salary hike 22, 23, 24 has the high attrition 
+table(emps$Attrition, emps$PercentSalaryHike)
+prop.table(table(emps$Attrition, emps$PercentSalaryHike), margin=2)
+
+# higher rate => more attrition
+table(emps$Attrition, emps$PerformanceRating)
+prop.table(table(emps$Attrition, emps$PerformanceRating), margin=2)      
+      
+# lower relationship => mroe attrition, though good relationship 4.
+table(emps$Attrition, emps$RelationshipSatisfaction)
+prop.table(table(emps$Attrition, emps$RelationshipSatisfaction), margin=2)  
+
+table(emps$Attrition, emps$StandardHours)
+
+table(emps$Attrition, emps$TotalWorkingYears)
+prop.table(table(emps$Attrition, emps$PerformanceRating), margin=2)  
+
+# 0 time highest, 4 times next, 2 tiems next, 5,6 smaller
+table(emps$Attrition, emps$TrainingTimesLastYear)
+prop.table(table(emps$Attrition, emps$TrainingTimesLastYear), margin=2)  
+
+# Lower work life balance, 
+table(emps$Attrition, emps$WorkLifeBalance)
+prop.table(table(emps$Attrition, emps$WorkLifeBalance), margin=2)
+
+#less year at the company more attrition
+table(emps$Attrition, emps$YearsAtCompany)
+prop.table(table(emps$Attrition, emps$YearsAtCompany), margin=2)
+
+# 0 year => 30 percent, 7 years 14%, 
+table(emps$Attrition, emps$YearsInCurrentRole)
+prop.table(table(emps$Attrition, emps$YearsInCurrentRole), margin=2)
+
+# longer year more attrition.
+table(emps$Attrition, emps$YearsSinceLastPromotion)
+prop.table(table(emps$Attrition, emps$YearsSinceLastPromotion), margin=2)
+
+
+
+table(emps$Attrition, emps$YearsWithCurrManager)
+prop.table(table(emps$Attrition, emps$YearsWithCurrManager), margin=2)
+```
+
+# 2. Tidying the data
+```{r}
+# Shows ratio of attribution of raw data.
+table(emps$Attrition)
+prop.table(table(emps$Attrition))
+
+emps %>% ggplot(aes(x=Attrition, fill=Attrition)) + geom_bar() + ggtitle("Count for each attrition value from the raw data") 
+```
+
+## The need of balancing the data
+Only 16% of data is for yes for attrition and rest of about 84% is no.
+This indicates imbalance of the data and can be a problem when we are training the model for the predicting attrition since less "yes" data might be hard for the model to predict which led the low specificity(the probability of number of correctly identified failures among true number of failures.) compared to high sensitivity and accuracy. Briefly, it means that the train model will be biased. Therefore, we need to balance the data.
+
+```{r}
+# When training with the raw data
+set.seed(10)
+splitPerc = 0.75
+trainidx <- sample(1:dim(emps)[1], round(splitPerc * dim(emps)[1]))
+train = emps[trainidx,]
+test = emps[-trainidx,]
+
+# demo running of the naiveBayes model.
+library(e1071)
+library(caret)
+model = naiveBayes(train[, -c(3)], train$Attrition)
+table(test$Attrition, predict(model, test[, -c(3)]))
+confusionMatrix(table(test$Attrition, predict(model, test[, -c(3)])))
+```
+
+## Oversampling
+Oversampling is a method to re-balance the distribution of data by increasing number of samples from the underrepresented class. By this technique, both value for attrition has each 730 samples.
+```{r}
+# Install and load ROSE if not already done
+#install.packages("ROSE")
+library(ROSE)
+
+# Define the target size for a balanced dataset
+target_size <- max(table(emps$Attrition)) * 2  # Twice the size of the majority class
+
+# Apply oversampling
+balanced_emps <- ovun.sample(Attrition ~ ., data = emps, method = "over", N = target_size)$data
+
+# Check the balance of the Attrition variable
+table(balanced_emps$Attrition)
+
+# bar chart that shows that data is balanced
+balanced_emps %>% ggplot(aes(x=Attrition, fill=Attrition)) + geom_bar() + ggtitle("Count for each attrition value") 
+
+```
+
+## Is it really balanced?
+Although according to the t.test, the p-value indicates that there is difference in mean between two. However, if we really look into mean of both samples, we can find that there is only 1 in mean difference. The reason is that since there are large samples, it is detecting small difference more easily. Ultimately, we can say that the oversampling well balanced the the data.
+```{r}
+# histogram of the raw data(emps) and the balanced data(balanced_emps)
+# I took age since age has more variance which can be well shown with distribution.
+hist(emps$Age)
+hist(balanced_emps$Age)
+
+t.test(emps$Age, balanced_emps$Age, alternative = c("two.sided"), var.equal=TRUE)
+```
+
+
+### Base score with balanced data.
+After balanced confusion matrix with all the columns. We have base score of accuracy of 71%, sensitivity of 73% and 68% of specificity which finds the true negative among the number of negativities. 
+
+```{r}
+# split the data set into 75% of train set and the 25% of test set.
+set.seed(10)
+splitPerc = 0.75
+trainidx <- sample(1:dim(balanced_emps)[1], round(splitPerc * dim(balanced_emps)[1]))
+train = balanced_emps[trainidx,]
+test = balanced_emps[-trainidx,]
+
+# for naive Bayes
+library(e1071)
+
+# For confusion Matrix
+library(caret)
+
+model = naiveBayes(train[, -c(3)], train$Attrition)
+table(test$Attrition, predict(model, test[, -c(3)]))
+confusionMatrix(table(test$Attrition, predict(model, test[, -c(3)])))
+```
+
+### Take out irrelevant columns. 
+Taking out more columns that doesn't really affect the attrition according to the contigency tables. Some of the variable had constant/ same values or variables like ID that doesn't imply any meaning among all employers. According to the accuracy which stays same as 71%, we can find out that those constant variables are not impacting attrition.
+```{r}
+# 1: ID
+# 3: Attrition
+# 10: EmployeeCount
+# 11: EmployeeNumber
+# 28: StandardHours
+model = naiveBayes(train[, -c(1,3, 10, 11,28)], train$Attrition)
+table(test$Attrition, predict(model, test[, -c(1,3, 10, 11,28)]))
+confusionMatrix(table(test$Attrition, predict(model, test[,-c(1,3, 10, 11, 28)])))
+```
+
+# 3. Analysis
+Now we are ready with the balanced data, we need to find out the factors that impacted Attrition. 
+
+## Question of the Interest 1: Department
+According to the contigency table it seems like some of the factors that is directly related to job's characteristics itself seems to have more distinction.
+I first looked into department to see if there are any significant differences.
+```{r}
+
+balanced_emps %>% ggplot(aes(x = Department, fill = Attrition)) + geom_bar(position = "fill") + ggtitle("Barchart of attribution rate for the department")
+```
+
+# Questions of the interest 2 : Job Role
+According to the barchart, Human Resources and Sales has high rate of attrition. Since there is a column of job role, we will what job roles are in what department and their attribution details.
+```{r}
+balanced_emps %>% ggplot(aes(x=JobRole, fill=Department)) + geom_bar() + ggtitle("Barchart shows which Jobroles are in which Department")
+
+```
+
+Over here we can categorize that 
+Sales: Sales Executive, Sales Representative
+Human Resource : Human Resources
+Research & Development : the rest without Manager
+Manager represents all department's managers.
+
+Now we will see if there's any significant difference of attrition in terms of job role. JobRole in Sales department has higher rates in Attrition, Human Resources shows some of the attrition rate.
+The top 5 high attrition rate would be Sales Representative, Human Resources, Laboratory Technician, Research Scientist, and Sales Executive.
+```{r}
+balanced_emps %>% ggplot(aes(x = JobRole, fill=Attrition)) + geom_bar(position = "fill") + ggtitle("Bar chart of JobRole vs. Attrition")
+
+```
+
+## Question of Interest 3: Job Level
+Since certain department sales and human resources are showing the higher attrition rate, does it has to do with their job level? Is it because the job is too simple? or because it is too difficult? The higher the job level is, the more competitive job skills and managing skills are needed. The red represents level 1 and they are largely distributed in certain Job roles such as Sales Representative, Human Resources, Laboratory Technician and Research Scientist. These match with the job role list that had higher attrition.
+```{r}
+balanced_emps$JobLevel <- as.factor(balanced_emps$JobLevel)
+balanced_emps %>% ggplot(aes(x = JobRole, fill=JobLevel)) + geom_bar(position = "fill")
+```
+
+If we look at the Attrition rate for each job level, Job level 1 has higher attrition rate. Also here found that the next higher attrition rate of job level 1 is job level 5 which is interesting and something to look into.
+```{r}
+balanced_emps %>% ggplot(aes(x = JobLevel, fill=Attrition)) + geom_bar(position = "fill")
+
+```
+Since Job level 1 requires just routine task and limited decision making jobs, it is likely that employeers leave the job. 
+
+### Question of Interest 4.
+Does this affect the year of time that people stay for a job? 
+According to the box plot, job roles that are showing lower years in current roles are Sales Representative, Human Resource, Research Scientist, Laboratory Technician and Sales Executive. The order and the group were exactly matched with the rank of job roles who that has higher attrition most.
+```{r}
+balanced_emps %>% ggplot(aes(x= JobRole, y=YearsInCurrentRole, fill = JobRole)) + geom_boxplot()
+```
+
+Since CurrentYearRole aleady has the same trend with the JobRole and show significant relation, we will search out for another factor that impact attrition.
+Below is the boxplot of the distance from home and there is a significant difference. The median of distance from home is higher in attrition "yes" group. Also, 50% of people who left the company tend to be more than the people who stayed.
+```{r}
+balanced_emps %>% ggplot(aes(x = Attrition, y = DistanceFromHome, color=Attrition)) + geom_boxplot()
+```
+
+## Conlcusion
+Three factors which are Job Role, Job Level and DistanceFromHome that are considered to be significantly impact the attrition according to the analysis. Since JobRole and Department are closely related, Department can be excluded. Also YearsInCurrentRole is closely related to JobRole will be excluded too. Now we will create a prediction model.
+
+
+# 4. Prediction model - Naive Bayes Model
+The model that is used for the prediction is naive base which has assumption that factors used for training are independent to each other. 
+The model reached 71.5% for accuracy, 71.3% for sensitivity and 71.8% for the specificity. I took out these columns from the model that were made for The base score to see if it drops any of the statistics. And all three statistics had dropped.
+
+```{r}
+# 7 - DistanceFromHome - Employee Feature
+# 15 - JobLevel - Job Environment
+# 17- JobRole - Job features
+
+model = naiveBayes(train[, c( 15, 17, 7)], train$Attrition)
+table(test$Attrition, predict(model, test[, c(15,17, 7)]))
+confusionMatrix(table(test$Attrition, predict(model, test[,c( 15, 17, 7)])))
+
+
+# Base Score
+model = naiveBayes(train[, -c(1,3, 10, 11,28)], train$Attrition)
+table(test$Attrition, predict(model, test[, -c(1,3, 10, 11,28)]))
+confusionMatrix(table(test$Attrition, predict(model, test[,-c(1,3, 10, 11,28)])))
+
+# Take out three factors from the base model
+model = naiveBayes(train[, -c(1,3, 10, 11,28, 15, 17, 7)], train$Attrition)
+table(test$Attrition, predict(model, test[,  -c(1,3, 10, 11,28, 15, 17, 7)]))
+confusionMatrix(table(test$Attrition, predict(model, test[, -c(1,3, 10, 11,28, 15, 17, 7)])))
+
+
+```
+
+# 5. Predict the data set
+This block is for predicting attrition value for the data that doesn't have attrition and export the prediction into csv file.
+```{r}
+model = naiveBayes(train[, c( 15, 17, 7)], train$Attrition)
+table(test$Attrition, predict(model, test[, c(15,17, 7)]))
+confusionMatrix(table(test$Attrition, predict(model, test[,c( 15, 17, 7)])))
+
+newtest = read.csv("/Users/oyunm/Desktop/SMU/DS-6306-Doing-the-Data-Science/project1/week8-case1/CaseStudy1CompSet No Attrition.csv")
+
+newtest$Attrition <- NA
+newtest <- newtest %>%
+  select(1:2, Attrition, everything())
+
+
+predicted_attritions = predict(model, test[, c(15,17, 7)]) 
+
+# Save the test data in CSV file.
+write.csv(predicted_attritions, "/Users/oyunm/Desktop/SMU/DS-6306-Doing-the-Data-Science/project1/week8-case1/Hayoung_cheon_predicted_attrition.csv", row.names = TRUE)
+
+
+```
+
+# 6. Youtube Link for the presentation
+https://youtu.be/isHC_EplNu0
+
+
+
